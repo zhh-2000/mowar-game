@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>墨战</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f7f8fa;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "SimSun", sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas { display: block; }
+  #ui-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background: rgba(255,255,255,0.9);
+    border-bottom: 1px solid #e2e8f0;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .force-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+  }
+  .force-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .player-dot { background: #2b6cb0; }
+  .ai-dot { background: #c53030; }
+  #ui-center {
+    position: absolute;
+    top: 60px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 16px;
+    color: #666;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #ui-bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    background: rgba(255,255,255,0.9);
+    border-top: 1px solid #e2e8f0;
+    pointer-events: auto;
+    z-index: 10;
+  }
+  .speed-btn {
+    padding: 6px 14px;
+    border: 1px solid #cbd5e0;
+    background: #fff;
+    color: #444;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .speed-btn:hover { background: #edf2f7; }
+  .speed-btn.active {
+    background: #2b6cb0;
+    color: #fff;
+    border-color: #2b6cb0;
+  }
+  #overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(247,248,250,0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.5s;
+  }
+  #overlay.hidden { opacity: 0; pointer-events: none; }
+  #overlay h1 {
+    font-size: 56px;
+    color: #2b6cb0;
+    letter-spacing: 12px;
+    margin-bottom: 12px;
+    font-weight: 900;
+  }
+  #overlay p { font-size: 16px; color: #666; margin-bottom: 32px; }
+  .start-btn {
+    padding: 12px 48px;
+    font-size: 20px;
+    border: 2px solid #2b6cb0;
+    background: transparent;
+    color: #2b6cb0;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.3s;
+    letter-spacing: 4px;
+  }
+  .start-btn:hover {
+    background: #2b6cb0;
+    color: #fff;
+  }
+  #victory-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(247,248,250,0.96);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  #victory-overlay.show { display: flex; }
+  #victory-overlay h2 { font-size: 48px; color: #2b6cb0; letter-spacing: 8px; margin-bottom: 24px; }
+  .restart-btn {
+    padding: 10px 36px;
+    font-size: 18px;
+    border: 2px solid #2b6cb0;
+    background: transparent;
+    color: #2b6cb0;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.3s;
+    letter-spacing: 3px;
+  }
+  .restart-btn:hover { background: #2b6cb0; color: #fff; }
+</style>
+</head>
+<body>
+
+<div id="ui-top">
+  <div class="force-box">
+    <span class="force-dot player-dot"></span>
+    <span>玩家: <span id="player-force">0</span></span>
+  </div>
+  <div id="ui-center">墨战 — 空格暂停</div>
+  <div class="force-box">
+    <span>AI: <span id="ai-force">0</span></span>
+    <span class="force-dot ai-dot"></span>
+  </div>
+</div>
+
+<div id="ui-bottom">
+  <button class="speed-btn active" data-speed="1">1x</button>
+  <button class="speed-btn" data-speed="2">2x</button>
+  <button class="speed-btn" data-speed="4">4x</button>
+</div>
+
+<div id="overlay">
+  <h1>墨战</h1>
+  <p>点击己方城池选中，再点击目标城池出兵 | 双击派出全部兵力</p>
+  <button class="start-btn" id="start-btn">开战</button>
+</div>
+
+<div id="victory-overlay">
+  <h2 id="victory-text">胜利</h2>
+  <button class="restart-btn" id="restart-btn">再战</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+(function() {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ===== 游戏参数 =====
+  const CITY_COUNT = 7;
+  const PRODUCE_INTERVAL = 0.5;
+  const PRODUCE_AMOUNT = 2;
+  const MOVE_SPEED_BASE = 120;
+  const AI_INTERVAL = 4; // AI决策间隔改为4秒（更慢）
+
+  const TEAM_PLAYER = 1;
+  const TEAM_AI = 2;
+  const TEAM_NEUTRAL = 0;
+
+  let gameSpeed = 1;
+  let paused = true;
+  let gameOver = false;
+  let lastTime = 0;
+  let aiTimer = 0;
+
+  // ===== 实体 =====
+  let cities = [];
+  let armies = [];
+  let effects = [];
+
+  class City {
+    constructor(id, x, y, team, baseForce) {
+      this.id = id;
+      this.x = x;
+      this.y = y;
+      this.team = team;
+      this.force = baseForce;
+      this.maxForce = 999;
+      this.radius = 0;
+      this.selected = false;
+      this.produceAcc = 0;
+      this.pulse = 0;
+    }
+
+    update(dt) {
+      const targetR = 16 + Math.sqrt(this.force) * 1.8;
+      this.radius += (targetR - this.radius) * 0.1;
+      this.pulse += dt * 3;
+
+      if (this.team !== TEAM_NEUTRAL && !gameOver) {
+        this.produceAcc += dt;
+        if (this.produceAcc >= PRODUCE_INTERVAL) {
+          this.produceAcc -= PRODUCE_INTERVAL;
+          const add = Math.floor(PRODUCE_AMOUNT);
+          this.force = Math.min(this.maxForce, this.force + add);
+          spawnFloatText(this.x, this.y - this.radius - 8, '+' + add, this.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030');
+        }
+      }
+    }
+  }
+
+  class Army {
+    constructor(fromCity, toCity, amount, team) {
+      this.from = fromCity;
+      this.to = toCity;
+      this.amount = amount;
+      this.team = team;
+      const dx = toCity.x - fromCity.x;
+      const dy = toCity.y - fromCity.y;
+      this.dist = Math.hypot(dx, dy);
+      this.dirX = dx / this.dist;
+      this.dirY = dy / this.dist;
+      this.progress = 0;
+      this.arrived = false;
+      this.dots = [];
+      const count = Math.max(3, Math.min(12, Math.floor(amount / 8)));
+      for (let i = 0; i < count; i++) {
+        this.dots.push({ offset: (i / count) * 12, dead: false });
+      }
+    }
+
+    update(dt) {
+      const spd = MOVE_SPEED_BASE * gameSpeed;
+      this.progress += spd * dt;
+
+      const totalLen = this.dist;
+      this.dots.forEach(d => {
+        d.pos = Math.max(0, Math.min(totalLen, this.progress - d.offset));
+        if (d.pos >= totalLen) d.dead = true;
+      });
+
+      if (this.progress >= this.dist) {
+        this.arrived = true;
+        this.onArrive();
+      }
+    }
+
+    onArrive() {
+      const target = this.to;
+      if (target.team === this.team) {
+        target.force += this.amount;
+        spawnFloatText(target.x, target.y - target.radius - 8, '+' + this.amount, this.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030');
+      } else {
+        const result = target.force - this.amount;
+        if (result > 0) {
+          target.force = result;
+          spawnFloatText(target.x, target.y, '-' + this.amount, '#c53030');
+          spawnExplosion(target.x, target.y, target.radius, '#718096');
+        } else if (result < 0) {
+          target.team = this.team;
+          target.force = -result;
+          spawnFloatText(target.x, target.y, '占领!', this.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030');
+          spawnExplosion(target.x, target.y, target.radius + 10, this.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030');
+        } else {
+          target.force = 0;
+          target.team = TEAM_NEUTRAL;
+          spawnFloatText(target.x, target.y, '清空', '#718096');
+          spawnExplosion(target.x, target.y, target.radius, '#718096');
+        }
+      }
+    }
+  }
+
+  class FloatText {
+    constructor(x, y, text, color) {
+      this.x = x;
+      this.y = y;
+      this.text = text;
+      this.color = color;
+      this.life = 1.2;
+      this.vy = -30;
+    }
+    update(dt) {
+      this.y += this.vy * dt;
+      this.life -= dt;
+    }
+  }
+
+  class Explosion {
+    constructor(x, y, maxR, color) {
+      this.x = x;
+      this.y = y;
+      this.r = 0;
+      this.maxR = maxR;
+      this.color = color;
+      this.life = 0.5;
+      this.particles = [];
+      const count = 12;
+      for (let i = 0; i < count; i++) {
+        const a = (Math.PI * 2 * i) / count;
+        this.particles.push({
+          x: x, y: y,
+          vx: Math.cos(a) * 60,
+          vy: Math.sin(a) * 60,
+          r: 2 + Math.random() * 3,
+        });
+      }
+    }
+    update(dt) {
+      this.r += (this.maxR - this.r) * 0.15;
+      this.life -= dt;
+      this.particles.forEach(p => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+      });
+    }
+  }
+
+  function spawnFloatText(x, y, text, color) {
+    effects.push(new FloatText(x, y, text, color));
+  }
+  function spawnExplosion(x, y, r, color) {
+    effects.push(new Explosion(x, y, r, color));
+  }
+
+  // ===== 初始化城池 =====
+  function initCities() {
+    cities = [];
+    armies = [];
+    effects = [];
+    aiTimer = 0;
+    gameOver = false;
+
+    const marginX = W * 0.18;
+    const marginY = H * 0.18;
+    const cw = W - marginX * 2;
+    const ch = H - marginY * 2;
+
+    // 玩家3座：左侧三角（初始兵力更高，有优势）
+    cities.push(new City(0, marginX + cw * 0.05, marginY + ch * 0.25, TEAM_PLAYER, 60));
+    cities.push(new City(1, marginX + cw * 0.05, marginY + ch * 0.75, TEAM_PLAYER, 60));
+    cities.push(new City(2, marginX + cw * 0.18, marginY + ch * 0.50, TEAM_PLAYER, 70));
+
+    // 中立1座：正中央
+    cities.push(new City(3, marginX + cw * 0.50, marginY + ch * 0.50, TEAM_NEUTRAL, 30));
+
+    // AI 3座：右侧三角（初始兵力降低）
+    cities.push(new City(4, marginX + cw * 0.95, marginY + ch * 0.25, TEAM_AI, 40));
+    cities.push(new City(5, marginX + cw * 0.95, marginY + ch * 0.75, TEAM_AI, 40));
+    cities.push(new City(6, marginX + cw * 0.82, marginY + ch * 0.50, TEAM_AI, 45));
+  }
+
+  // ===== 出兵 =====
+  function sendArmy(from, to, ratio) {
+    if (from.team === TEAM_NEUTRAL) return;
+    if (from.force <= 1) return;
+    const amount = Math.max(1, Math.floor(from.force * ratio));
+    from.force -= amount;
+    armies.push(new Army(from, to, amount, from.team));
+  }
+
+  // ===== AI（更简单、更慢） =====
+  function aiThink() {
+    const myCities = cities.filter(c => c.team === TEAM_AI && c.force > 1);
+    if (myCities.length === 0) return;
+
+    const enemyCities = cities.filter(c => c.team !== TEAM_AI);
+    const neutralCities = cities.filter(c => c.team === TEAM_NEUTRAL);
+
+    myCities.forEach(city => {
+      if (city.force <= 1) return;
+      let target = null;
+      let bestScore = -9999;
+
+      const targets = [...enemyCities, ...neutralCities];
+      targets.forEach(t => {
+        const d = Math.hypot(t.x - city.x, t.y - city.y);
+        let score = -d * 0.5;
+        if (t.team === TEAM_NEUTRAL && t.force < 40) {
+          score += 200;
+        }
+        if (t.team === TEAM_PLAYER && t.force < city.force) {
+          score += 150;
+        }
+        if (t.team === TEAM_PLAYER) {
+          score += 50;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          target = t;
+        }
+      });
+
+      if (target && city.force > 30) {
+        // 更保守的出兵逻辑：兵力>150才主动出兵，否则只在明显优势时才出兵，且只出30%
+        if (city.force > 150) {
+          sendArmy(city, target, 0.3);
+        } else if (target.team === TEAM_NEUTRAL && target.force < city.force * 0.6) {
+          sendArmy(city, target, 0.3);
+        } else if (target.team === TEAM_PLAYER && target.force < city.force * 0.5) {
+          sendArmy(city, target, 0.3);
+        }
+      }
+    });
+  }
+
+  // ===== 输入处理 =====
+  let selectedCity = null;
+  let lastClickTime = 0;
+  let lastClickCity = null;
+
+  function getCityAt(x, y) {
+    for (let c of cities) {
+      const dx = c.x - x, dy = c.y - y;
+      if (dx * dx + dy * dy <= (c.radius + 8) * (c.radius + 8)) return c;
+    }
+    return null;
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    if (paused || gameOver) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const city = getCityAt(x, y);
+    const now = performance.now();
+
+    if (city) {
+      if (lastClickCity === city && now - lastClickTime < 300) {
+        if (city.team === TEAM_PLAYER && selectedCity === city) {
+          let nearest = null, nd = Infinity;
+          cities.forEach(c => {
+            if (c !== city && c.team !== TEAM_PLAYER) {
+              const d = Math.hypot(c.x - city.x, c.y - city.y);
+              if (d < nd) { nd = d; nearest = c; }
+            }
+          });
+          if (nearest) {
+            sendArmy(city, nearest, 1);
+            selectedCity = null;
+          }
+        }
+        lastClickTime = 0;
+        lastClickCity = null;
+        return;
+      }
+      lastClickTime = now;
+      lastClickCity = city;
+
+      if (city.team === TEAM_PLAYER) {
+        selectedCity = city;
+      } else if (selectedCity && selectedCity.team === TEAM_PLAYER) {
+        sendArmy(selectedCity, city, 0.5);
+        selectedCity = null;
+      } else {
+        selectedCity = null;
+      }
+    } else {
+      selectedCity = null;
+    }
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      togglePause();
+    }
+  });
+
+  function togglePause() {
+    if (gameOver) return;
+    paused = !paused;
+    document.getElementById('ui-center').textContent = paused ? '墨战 — 已暂停' : '墨战 — 空格暂停';
+  }
+
+  // ===== 速度按钮 =====
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      gameSpeed = parseInt(btn.dataset.speed);
+    });
+  });
+
+  // ===== 胜负判定 =====
+  function checkVictory() {
+    const playerCities = cities.filter(c => c.team === TEAM_PLAYER);
+    const aiCities = cities.filter(c => c.team === TEAM_AI);
+    const playerForce = playerCities.reduce((s, c) => s + c.force, 0) + armies.filter(a => a.team === TEAM_PLAYER && !a.arrived).reduce((s, a) => s + a.amount, 0);
+    const aiForce = aiCities.reduce((s, c) => s + c.force, 0) + armies.filter(a => a.team === TEAM_AI && !a.arrived).reduce((s, a) => s + a.amount, 0);
+
+    document.getElementById('player-force').textContent = Math.floor(playerForce);
+    document.getElementById('ai-force').textContent = Math.floor(aiForce);
+
+    if (aiCities.length === 0 || aiForce <= 0) {
+      endGame(true);
+    } else if (playerCities.length === 0 || playerForce <= 0) {
+      endGame(false);
+    }
+  }
+
+  function endGame(playerWin) {
+    gameOver = true;
+    document.getElementById('victory-text').textContent = playerWin ? '胜利' : '战败';
+    document.getElementById('victory-overlay').classList.add('show');
+  }
+
+  // ===== 绘制 =====
+  function drawInkCity(cx, cy, r, team, selected) {
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // 外圈晕染
+    ctx.globalAlpha = 0.18;
+    const grad = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 1.6);
+    if (team === TEAM_PLAYER) {
+      grad.addColorStop(0, '#4299e1');
+      grad.addColorStop(1, 'rgba(66,153,225,0)');
+    } else if (team === TEAM_AI) {
+      grad.addColorStop(0, '#fc8181');
+      grad.addColorStop(1, 'rgba(252,129,129,0)');
+    } else {
+      grad.addColorStop(0, '#a0aec0');
+      grad.addColorStop(1, 'rgba(160,174,192,0)');
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 主圆
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = team === TEAM_PLAYER ? '#2b6cb0' : team === TEAM_AI ? '#c53030' : '#a0aec0';
+    ctx.beginPath();
+    const seg = 16;
+    for (let i = 0; i <= seg; i++) {
+      const a = (Math.PI * 2 * i) / seg;
+      const noise = 1 + Math.sin(a * 3 + cy * 0.1) * 0.06 + Math.cos(a * 5 + cx * 0.1) * 0.04;
+      const rr = r * noise;
+      const px = Math.cos(a) * rr;
+      const py = Math.sin(a) * rr;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // 高亮选中
+    if (selected) {
+      ctx.strokeStyle = '#4299e1';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(0, 0, r + 10, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // 兵力数字
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + Math.max(10, Math.floor(r * 0.55)) + 'px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Math.floor(cities.find(c => c.x === cx && c.y === cy)?.force || 0), 0, 1);
+
+    ctx.restore();
+  }
+
+  function drawArmyLine(a) {
+    ctx.save();
+    const fx = a.from.x, fy = a.from.y;
+    const tx = a.to.x, ty = a.to.y;
+
+    // 连线
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = a.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+
+    // 移动墨点
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = a.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030';
+    a.dots.forEach(d => {
+      if (d.dead) return;
+      const ratio = d.pos / a.dist;
+      const px = fx + (tx - fx) * ratio;
+      const py = fy + (ty - fy) * ratio;
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.restore();
+  }
+
+  function drawEffects(dt) {
+    effects.filter(e => e instanceof FloatText).forEach(e => {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, e.life / 1.2);
+      ctx.fillStyle = e.color;
+      ctx.font = 'bold 16px "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(e.text, e.x, e.y);
+      ctx.restore();
+    });
+
+    effects.filter(e => e instanceof Explosion).forEach(e => {
+      ctx.save();
+      const a = Math.max(0, e.life / 0.5);
+      ctx.globalAlpha = a * 0.4;
+      ctx.strokeStyle = e.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = a * 0.7;
+      e.particles.forEach(p => {
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * a, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    });
+  }
+
+  function drawBackground() {
+    ctx.save();
+    ctx.globalAlpha = 0.03;
+    ctx.fillStyle = '#a0aec0';
+    for (let i = 0; i < 5; i++) {
+      const bx = (Math.sin(i * 2.3) * 0.5 + 0.5) * W;
+      const by = (Math.cos(i * 1.7) * 0.5 + 0.5) * H;
+      ctx.beginPath();
+      ctx.arc(bx, by, 80 + i * 20, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ===== 主循环 =====
+  function loop(timestamp) {
+    requestAnimationFrame(loop);
+    if (!lastTime) lastTime = timestamp;
+    let dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+    if (dt > 0.1) dt = 0.1;
+
+    if (!paused && !gameOver) {
+      const sdt = dt * gameSpeed;
+
+      aiTimer += sdt;
+      if (aiTimer >= AI_INTERVAL) {
+        aiTimer -= AI_INTERVAL;
+        aiThink();
+      }
+
+      cities.forEach(c => c.update(sdt));
+      armies.forEach(a => a.update(sdt));
+      armies = armies.filter(a => !a.arrived);
+      effects.forEach(e => e.update(sdt));
+      effects = effects.filter(e => e.life > 0);
+
+      checkVictory();
+    }
+
+    ctx.clearRect(0, 0, W, H);
+    drawBackground();
+    armies.forEach(a => drawArmyLine(a));
+    cities.forEach(c => {
+      drawInkCity(c.x, c.y, c.radius, c.team, c === selectedCity);
+    });
+    drawEffects(dt);
+  }
+
+  // ===== 启动 =====
+  document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('overlay').classList.add('hidden');
+    initCities();
+    paused = false;
+  });
+
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    document.getElementById('victory-overlay').classList.remove('show');
+    initCities();
+    paused = false;
+  });
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
