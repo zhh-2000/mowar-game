@@ -3,155 +3,439 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>墨战</title>
+<title>墨战 · 群雄逐鹿</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    background: #f7f8fa;
+    background: #0f0f1a;
     overflow: hidden;
     font-family: "Microsoft YaHei", "SimSun", sans-serif;
     user-select: none;
     -webkit-user-select: none;
   }
   canvas { display: block; }
+
+  /* ===== 起始页面 ===== */
+  #start-page {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, #0f0f1a 0%, #1a1a3e 40%, #2d1b4e 70%, #1a1a3e 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    transition: opacity 0.6s, transform 0.6s;
+  }
+  #start-page.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1.05);
+  }
+  .start-card {
+    width: 480px;
+    max-width: 90vw;
+    text-align: center;
+    position: relative;
+  }
+  .step {
+    display: none;
+    animation: fadeInUp 0.5s ease;
+  }
+  .step.active { display: block; }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  #start-page h1 {
+    font-size: 72px;
+    color: #f0f0f5;
+    letter-spacing: 16px;
+    margin-bottom: 8px;
+    font-weight: 900;
+    text-shadow: 0 0 40px rgba(100,149,237,0.4);
+    padding-left: 16px;
+  }
+  #start-page .subtitle {
+    font-size: 16px;
+    color: #8888aa;
+    margin-bottom: 48px;
+    letter-spacing: 6px;
+  }
+  .big-btn {
+    padding: 14px 64px;
+    font-size: 22px;
+    border: 2px solid #6366f1;
+    background: transparent;
+    color: #818cf8;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s;
+    letter-spacing: 6px;
+    font-family: inherit;
+    font-weight: bold;
+    padding-left: 70px;
+  }
+  .big-btn:hover {
+    background: #6366f1;
+    color: #fff;
+    box-shadow: 0 0 30px rgba(99,102,241,0.5);
+    transform: translateY(-2px);
+  }
+  .step h2 {
+    font-size: 28px;
+    color: #c0c0e0;
+    letter-spacing: 8px;
+    margin-bottom: 36px;
+    font-weight: 700;
+    padding-left: 8px;
+  }
+  .back-btn {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    padding: 6px 18px;
+    font-size: 14px;
+    border: 1px solid #555570;
+    background: transparent;
+    color: #9999bb;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .back-btn:hover { border-color: #818cf8; color: #818cf8; }
+
+  /* 难度选择 */
+  .difficulty-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+  .diff-card {
+    padding: 20px 28px;
+    border: 2px solid #333350;
+    background: rgba(255,255,255,0.03);
+    color: #ccccee;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s;
+    text-align: left;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .diff-card:hover {
+    border-color: #6366f1;
+    background: rgba(99,102,241,0.08);
+    transform: translateX(6px);
+  }
+  .diff-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+  .diff-card[data-diff="easy"] .diff-icon { background: #22c55e; color: #fff; }
+  .diff-card[data-diff="normal"] .diff-icon { background: #f59e0b; color: #fff; }
+  .diff-card[data-diff="hard"] .diff-icon { background: #ef4444; color: #fff; }
+  .diff-info { display: flex; flex-direction: column; gap: 4px; }
+  .diff-title { font-size: 20px; font-weight: bold; }
+  .diff-desc { font-size: 13px; color: #8888aa; }
+
+  /* 对手数量选择 */
+  .opp-section {
+    margin-bottom: 36px;
+  }
+  .opp-display-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .opp-btn {
+    width: 44px; height: 44px;
+    border: 2px solid #444460;
+    background: transparent;
+    color: #aaaacc;
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.2s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .opp-btn:hover { border-color: #818cf8; color: #818cf8; background: rgba(99,102,241,0.1); }
+  .opp-btn:active { transform: scale(0.92); }
+  #opp-display {
+    font-size: 56px;
+    font-weight: 900;
+    color: #818cf8;
+    min-width: 80px;
+    text-align: center;
+    text-shadow: 0 0 30px rgba(99,102,241,0.4);
+  }
+  .opp-label {
+    font-size: 14px;
+    color: #777799;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+  .opp-slider-wrap {
+    margin: 0 20px 28px;
+  }
+  #opp-slider {
+    width: 100%;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #333350;
+    border-radius: 3px;
+    outline: none;
+  }
+  #opp-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(99,102,241,0.6);
+  }
+  #opp-slider::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 12px rgba(99,102,241,0.6);
+  }
+  .color-preview {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .color-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px currentColor;
+    transition: transform 0.2s;
+  }
+  .color-dot:hover { transform: scale(1.3); }
+
+  /* ===== 游戏UI ===== */
   #ui-top {
     position: absolute;
     top: 0; left: 0; right: 0;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 12px 24px;
-    background: rgba(255,255,255,0.9);
-    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 16px;
+    background: rgba(15,15,26,0.85);
+    border-bottom: 1px solid #2a2a40;
     pointer-events: none;
     z-index: 10;
+    gap: 16px;
   }
-  .force-box {
+  #team-bar {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  #team-bar::-webkit-scrollbar { height: 3px; }
+  #team-bar::-webkit-scrollbar-thumb { background: #444460; border-radius: 2px; }
+  .team-pill {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid transparent;
+    font-size: 14px;
+    color: #dddde5;
+    white-space: nowrap;
+    transition: all 0.3s;
   }
-  .force-dot {
-    width: 14px; height: 14px;
+  .team-pill.is-player {
+    border-color: rgba(99,102,241,0.5);
+    background: rgba(99,102,241,0.1);
+  }
+  .team-pill.eliminated {
+    opacity: 0.3;
+    text-decoration: line-through;
+  }
+  .pill-dot {
+    width: 10px; height: 10px;
     border-radius: 50%;
-    display: inline-block;
+    flex-shrink: 0;
   }
-  .player-dot { background: #2b6cb0; }
-  .ai-dot { background: #c53030; }
-  #ui-center {
-    position: absolute;
-    top: 60px; left: 50%;
-    transform: translateX(-50%);
-    font-size: 16px;
-    color: #666;
-    pointer-events: none;
-    z-index: 10;
+  .pill-force {
+    font-weight: bold;
+    min-width: 30px;
+    text-align: right;
   }
+  #game-status {
+    font-size: 14px;
+    color: #8888aa;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
   #ui-bottom {
     position: absolute;
     bottom: 0; left: 0; right: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 16px;
-    padding: 12px 24px;
-    background: rgba(255,255,255,0.9);
-    border-top: 1px solid #e2e8f0;
+    gap: 12px;
+    padding: 10px 24px;
+    background: rgba(15,15,26,0.85);
+    border-top: 1px solid #2a2a40;
     pointer-events: auto;
     z-index: 10;
   }
   .speed-btn {
-    padding: 6px 14px;
-    border: 1px solid #cbd5e0;
-    background: #fff;
-    color: #444;
+    padding: 6px 16px;
+    border: 1px solid #444460;
+    background: transparent;
+    color: #aaaacc;
     font-size: 14px;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.2s;
+    font-family: inherit;
   }
-  .speed-btn:hover { background: #edf2f7; }
+  .speed-btn:hover { border-color: #818cf8; color: #818cf8; }
   .speed-btn.active {
-    background: #2b6cb0;
+    background: #6366f1;
     color: #fff;
-    border-color: #2b6cb0;
+    border-color: #6366f1;
   }
-  #overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(247,248,250,0.95);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    transition: opacity 0.5s;
-  }
-  #overlay.hidden { opacity: 0; pointer-events: none; }
-  #overlay h1 {
-    font-size: 56px;
-    color: #2b6cb0;
-    letter-spacing: 12px;
-    margin-bottom: 12px;
-    font-weight: 900;
-  }
-  #overlay p { font-size: 16px; color: #666; margin-bottom: 32px; }
-  .start-btn {
-    padding: 12px 48px;
-    font-size: 20px;
-    border: 2px solid #2b6cb0;
-    background: transparent;
-    color: #2b6cb0;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.3s;
-    letter-spacing: 4px;
-  }
-  .start-btn:hover {
-    background: #2b6cb0;
-    color: #fff;
-  }
+
+  /* ===== 胜利/失败覆盖层 ===== */
   #victory-overlay {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(247,248,250,0.96);
+    background: rgba(15,15,26,0.95);
     display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 100;
+    animation: fadeIn 0.5s ease;
   }
   #victory-overlay.show { display: flex; }
-  #victory-overlay h2 { font-size: 48px; color: #2b6cb0; letter-spacing: 8px; margin-bottom: 24px; }
-  .restart-btn {
-    padding: 10px 36px;
-    font-size: 18px;
-    border: 2px solid #2b6cb0;
-    background: transparent;
-    color: #2b6cb0;
-    cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.3s;
-    letter-spacing: 3px;
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  #victory-overlay h2 {
+    font-size: 56px;
+    letter-spacing: 10px;
+    margin-bottom: 12px;
+    font-weight: 900;
+    padding-left: 10px;
   }
-  .restart-btn:hover { background: #2b6cb0; color: #fff; }
+  #victory-sub {
+    font-size: 18px;
+    color: #8888aa;
+    margin-bottom: 36px;
+    letter-spacing: 4px;
+  }
+  .victory-btns { display: flex; gap: 16px; }
+  .restart-btn, .menu-btn {
+    padding: 12px 40px;
+    font-size: 18px;
+    border: 2px solid;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s;
+    letter-spacing: 4px;
+    font-family: inherit;
+    font-weight: bold;
+    padding-left: 44px;
+  }
+  .restart-btn { border-color: #6366f1; color: #818cf8; }
+  .restart-btn:hover { background: #6366f1; color: #fff; box-shadow: 0 0 25px rgba(99,102,241,0.5); }
+  .menu-btn { border-color: #555570; color: #9999bb; }
+  .menu-btn:hover { background: #555570; color: #fff; }
 </style>
 </head>
 <body>
 
+<!-- 起始页面 -->
+<div id="start-page">
+  <div class="start-card">
+    <!-- 步骤1: 标题 + 开始 -->
+    <div id="step-1" class="step active">
+      <h1>墨战</h1>
+      <p class="subtitle">水墨策略 · 群雄逐鹿</p>
+      <button class="big-btn" id="to-step-2">开始</button>
+    </div>
+
+    <!-- 步骤2: 难度选择 -->
+    <div id="step-2" class="step">
+      <button class="back-btn" data-back="1">← 返回</button>
+      <h2>选择难度</h2>
+      <div class="difficulty-grid">
+        <button class="diff-card" data-diff="easy">
+          <div class="diff-icon">易</div>
+          <div class="diff-info">
+            <span class="diff-title">简单</span>
+            <span class="diff-desc">AI 谨慎保守 · 玩家初始兵力优势大</span>
+          </div>
+        </button>
+        <button class="diff-card" data-diff="normal">
+          <div class="diff-icon">中</div>
+          <div class="diff-info">
+            <span class="diff-title">普通</span>
+            <span class="diff-desc">势均力敌 · 标准对战体验</span>
+          </div>
+        </button>
+        <button class="diff-card" data-diff="hard">
+          <div class="diff-icon">难</div>
+          <div class="diff-info">
+            <span class="diff-title">困难</span>
+            <span class="diff-desc">AI 激进狡猾 · 玩家初始兵力劣势</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 步骤3: 对手数量 -->
+    <div id="step-3" class="step">
+      <button class="back-btn" data-back="2">← 返回</button>
+      <h2>选择对手</h2>
+      <p class="opp-label">对手数量</p>
+      <div class="opp-display-wrap">
+        <button class="opp-btn" id="opp-minus">−</button>
+        <span id="opp-display">3</span>
+        <button class="opp-btn" id="opp-plus">+</button>
+      </div>
+      <div class="opp-slider-wrap">
+        <input type="range" min="1" max="10" value="3" id="opp-slider">
+      </div>
+      <div class="color-preview" id="color-preview"></div>
+      <button class="big-btn" id="start-game">开战</button>
+    </div>
+  </div>
+</div>
+
+<!-- 游戏UI -->
 <div id="ui-top">
-  <div class="force-box">
-    <span class="force-dot player-dot"></span>
-    <span>玩家: <span id="player-force">0</span></span>
-  </div>
-  <div id="ui-center">墨战 — 空格暂停</div>
-  <div class="force-box">
-    <span>AI: <span id="ai-force">0</span></span>
-    <span class="force-dot ai-dot"></span>
-  </div>
+  <div id="team-bar"></div>
+  <div id="game-status">空格暂停</div>
 </div>
 
 <div id="ui-bottom">
@@ -160,15 +444,13 @@
   <button class="speed-btn" data-speed="4">4x</button>
 </div>
 
-<div id="overlay">
-  <h1>墨战</h1>
-  <p>点击己方城池选中，再点击目标城池出兵 | 双击派出全部兵力</p>
-  <button class="start-btn" id="start-btn">开战</button>
-</div>
-
 <div id="victory-overlay">
   <h2 id="victory-text">胜利</h2>
-  <button class="restart-btn" id="restart-btn">再战</button>
+  <p id="victory-sub"></p>
+  <div class="victory-btns">
+    <button class="restart-btn" id="restart-btn">再战</button>
+    <button class="menu-btn" id="menu-btn">主菜单</button>
+  </div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -185,31 +467,59 @@
     canvas.width = W;
     canvas.height = H;
   }
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', () => { resize(); });
   resize();
 
-  // ===== 游戏参数 =====
-  const CITY_COUNT = 7;
+  // ===== 团队颜色系统 =====
+  const TEAM_NEUTRAL = -1;
+  const TEAM_PLAYER = 0;
+
+  const TEAM_COLORS = [
+    { main: '#4f7cf7', light: '#7ba0ff', glow: 'rgba(79,124,247,0.35)', name: '蓝方' },   // 玩家 - 亮蓝
+    { main: '#ff4757', light: '#ff6b81', glow: 'rgba(255,71,87,0.35)', name: '赤方' },     // 亮红
+    { main: '#2ed573', light: '#7bed9f', glow: 'rgba(46,213,115,0.35)', name: '翠方' },    // 翠绿
+    { main: '#a55eea', light: '#c4b5fd', glow: 'rgba(165,94,234,0.35)', name: '紫方' },    // 亮紫
+    { main: '#ff6b9d', light: '#ffa3c2', glow: 'rgba(255,107,157,0.35)', name: '粉方' },   // 亮粉
+    { main: '#00d2d3', light: '#48dbfb', glow: 'rgba(0,210,211,0.35)', name: '青方' },     // 亮青
+    { main: '#feca57', light: '#ffe082', glow: 'rgba(254,202,87,0.35)', name: '金方' },    // 亮金
+    { main: '#ff9f43', light: '#ffc078', glow: 'rgba(255,159,67,0.35)', name: '橙方' },    // 亮橙
+    { main: '#54a0ff', light: '#74c0fc', glow: 'rgba(84,160,255,0.35)', name: '天方' },    // 天蓝
+    { main: '#10b981', light: '#34d399', glow: 'rgba(16,185,129,0.35)', name: '碧方' },    // 碧绿
+    { main: '#ee5a6f', light: '#f7838c', glow: 'rgba(238,90,111,0.35)', name: '玫方' },    // 玫红
+  ];
+  const NEUTRAL_COLOR = { main: '#fd7e14', light: '#ffa94d', glow: 'rgba(253,126,20,0.3)', name: '中立' };
+
+  function getTeamColor(team) {
+    if (team === TEAM_NEUTRAL) return NEUTRAL_COLOR;
+    return TEAM_COLORS[team] || TEAM_COLORS[0];
+  }
+
+  // ===== 难度配置 =====
+  const DIFFICULTY = {
+    easy:   { playerForce: 90, aiForce: 25, aiInterval: 6, aiThreshold: 200, aiRatio: 0.3, aiAggro: 0.5 },
+    normal: { playerForce: 65, aiForce: 45, aiInterval: 4, aiThreshold: 150, aiRatio: 0.35, aiAggro: 0.6 },
+    hard:   { playerForce: 50, aiForce: 60, aiInterval: 2.5, aiThreshold: 80, aiRatio: 0.45, aiAggro: 0.8 },
+  };
+
+  // ===== 游戏状态 =====
   const PRODUCE_INTERVAL = 0.5;
   const PRODUCE_AMOUNT = 2;
   const MOVE_SPEED_BASE = 120;
-  const AI_INTERVAL = 4; // AI决策间隔改为4秒（更慢）
-
-  const TEAM_PLAYER = 1;
-  const TEAM_AI = 2;
-  const TEAM_NEUTRAL = 0;
 
   let gameSpeed = 1;
   let paused = true;
   let gameOver = false;
   let lastTime = 0;
-  let aiTimer = 0;
+  let aiTimers = {};
+  let currentDifficulty = 'normal';
+  let currentOpponentCount = 3;
+  let totalTeams = 1;
 
-  // ===== 实体 =====
   let cities = [];
   let armies = [];
   let effects = [];
 
+  // ===== 实体类 =====
   class City {
     constructor(id, x, y, team, baseForce) {
       this.id = id;
@@ -221,21 +531,20 @@
       this.radius = 0;
       this.selected = false;
       this.produceAcc = 0;
-      this.pulse = 0;
+      this.pulse = Math.random() * Math.PI * 2;
     }
-
     update(dt) {
       const targetR = 16 + Math.sqrt(this.force) * 1.8;
       this.radius += (targetR - this.radius) * 0.1;
       this.pulse += dt * 3;
-
       if (this.team !== TEAM_NEUTRAL && !gameOver) {
         this.produceAcc += dt;
         if (this.produceAcc >= PRODUCE_INTERVAL) {
           this.produceAcc -= PRODUCE_INTERVAL;
           const add = Math.floor(PRODUCE_AMOUNT);
           this.force = Math.min(this.maxForce, this.force + add);
-          spawnFloatText(this.x, this.y - this.radius - 8, '+' + add, this.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030');
+          const col = getTeamColor(this.team);
+          spawnFloatText(this.x, this.y - this.radius - 8, '+' + add, col.light);
         }
       }
     }
@@ -250,54 +559,51 @@
       const dx = toCity.x - fromCity.x;
       const dy = toCity.y - fromCity.y;
       this.dist = Math.hypot(dx, dy);
-      this.dirX = dx / this.dist;
-      this.dirY = dy / this.dist;
+      this.dirX = this.dist > 0 ? dx / this.dist : 0;
+      this.dirY = this.dist > 0 ? dy / this.dist : 0;
       this.progress = 0;
       this.arrived = false;
       this.dots = [];
-      const count = Math.max(3, Math.min(12, Math.floor(amount / 8)));
+      const count = Math.max(3, Math.min(14, Math.floor(amount / 8)));
       for (let i = 0; i < count; i++) {
-        this.dots.push({ offset: (i / count) * 12, dead: false });
+        this.dots.push({ offset: (i / count) * 14, dead: false, pos: 0 });
       }
     }
-
     update(dt) {
       const spd = MOVE_SPEED_BASE * gameSpeed;
       this.progress += spd * dt;
-
-      const totalLen = this.dist;
       this.dots.forEach(d => {
-        d.pos = Math.max(0, Math.min(totalLen, this.progress - d.offset));
-        if (d.pos >= totalLen) d.dead = true;
+        d.pos = Math.max(0, Math.min(this.dist, this.progress - d.offset));
+        if (d.pos >= this.dist) d.dead = true;
       });
-
       if (this.progress >= this.dist) {
         this.arrived = true;
         this.onArrive();
       }
     }
-
     onArrive() {
       const target = this.to;
+      const col = getTeamColor(this.team);
       if (target.team === this.team) {
         target.force += this.amount;
-        spawnFloatText(target.x, target.y - target.radius - 8, '+' + this.amount, this.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030');
+        spawnFloatText(target.x, target.y - target.radius - 8, '+' + this.amount, col.light);
       } else {
         const result = target.force - this.amount;
         if (result > 0) {
           target.force = result;
-          spawnFloatText(target.x, target.y, '-' + this.amount, '#c53030');
-          spawnExplosion(target.x, target.y, target.radius, '#718096');
+          const defCol = getTeamColor(target.team);
+          spawnFloatText(target.x, target.y, '-' + this.amount, defCol.light);
+          spawnExplosion(target.x, target.y, target.radius, defCol.main);
         } else if (result < 0) {
           target.team = this.team;
           target.force = -result;
-          spawnFloatText(target.x, target.y, '占领!', this.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030');
-          spawnExplosion(target.x, target.y, target.radius + 10, this.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030');
+          spawnFloatText(target.x, target.y, '占领!', col.light);
+          spawnExplosion(target.x, target.y, target.radius + 12, col.main);
         } else {
           target.force = 0;
           target.team = TEAM_NEUTRAL;
-          spawnFloatText(target.x, target.y, '清空', '#718096');
-          spawnExplosion(target.x, target.y, target.radius, '#718096');
+          spawnFloatText(target.x, target.y, '清空', NEUTRAL_COLOR.light);
+          spawnExplosion(target.x, target.y, target.radius, NEUTRAL_COLOR.main);
         }
       }
     }
@@ -305,83 +611,84 @@
 
   class FloatText {
     constructor(x, y, text, color) {
-      this.x = x;
-      this.y = y;
-      this.text = text;
-      this.color = color;
-      this.life = 1.2;
-      this.vy = -30;
+      this.x = x; this.y = y; this.text = text; this.color = color;
+      this.life = 1.2; this.vy = -30;
     }
-    update(dt) {
-      this.y += this.vy * dt;
-      this.life -= dt;
-    }
+    update(dt) { this.y += this.vy * dt; this.life -= dt; }
   }
 
   class Explosion {
     constructor(x, y, maxR, color) {
-      this.x = x;
-      this.y = y;
-      this.r = 0;
-      this.maxR = maxR;
-      this.color = color;
-      this.life = 0.5;
+      this.x = x; this.y = y; this.r = 0; this.maxR = maxR;
+      this.color = color; this.life = 0.5;
       this.particles = [];
-      const count = 12;
+      const count = 14;
       for (let i = 0; i < count; i++) {
-        const a = (Math.PI * 2 * i) / count;
-        this.particles.push({
-          x: x, y: y,
-          vx: Math.cos(a) * 60,
-          vy: Math.sin(a) * 60,
-          r: 2 + Math.random() * 3,
-        });
+        const a = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+        const speed = 50 + Math.random() * 40;
+        this.particles.push({ x, y, vx: Math.cos(a)*speed, vy: Math.sin(a)*speed, r: 2+Math.random()*3 });
       }
     }
     update(dt) {
       this.r += (this.maxR - this.r) * 0.15;
       this.life -= dt;
-      this.particles.forEach(p => {
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.vx *= 0.95;
-        p.vy *= 0.95;
-      });
+      this.particles.forEach(p => { p.x += p.vx*dt; p.y += p.vy*dt; p.vx*=0.93; p.vy*=0.93; });
     }
   }
 
-  function spawnFloatText(x, y, text, color) {
-    effects.push(new FloatText(x, y, text, color));
-  }
-  function spawnExplosion(x, y, r, color) {
-    effects.push(new Explosion(x, y, r, color));
-  }
+  function spawnFloatText(x, y, text, color) { effects.push(new FloatText(x, y, text, color)); }
+  function spawnExplosion(x, y, r, color) { effects.push(new Explosion(x, y, r, color)); }
 
-  // ===== 初始化城池 =====
-  function initCities() {
+  // ===== 城池初始化 =====
+  function initCities(opponentCount, difficulty) {
     cities = [];
     armies = [];
     effects = [];
-    aiTimer = 0;
+    aiTimers = {};
     gameOver = false;
 
-    const marginX = W * 0.18;
-    const marginY = H * 0.18;
-    const cw = W - marginX * 2;
-    const ch = H - marginY * 2;
+    totalTeams = 1 + opponentCount;
+    const cfg = DIFFICULTY[difficulty];
+    const centerX = W / 2;
+    const centerY = H / 2;
+    const teamRadius = Math.min(W, H) * 0.36;
 
-    // 玩家3座：左侧三角（初始兵力更高，有优势）
-    cities.push(new City(0, marginX + cw * 0.05, marginY + ch * 0.25, TEAM_PLAYER, 60));
-    cities.push(new City(1, marginX + cw * 0.05, marginY + ch * 0.75, TEAM_PLAYER, 60));
-    cities.push(new City(2, marginX + cw * 0.18, marginY + ch * 0.50, TEAM_PLAYER, 70));
+    // 各队伍城池：圆形分布
+    for (let i = 0; i < totalTeams; i++) {
+      const angle = -Math.PI / 2 + (i / totalTeams) * Math.PI * 2;
+      const tx = centerX + Math.cos(angle) * teamRadius;
+      const ty = centerY + Math.sin(angle) * teamRadius;
+      const force = i === 0 ? cfg.playerForce : cfg.aiForce;
 
-    // 中立1座：正中央
-    cities.push(new City(3, marginX + cw * 0.50, marginY + ch * 0.50, TEAM_NEUTRAL, 30));
+      // 每队2座城，略微偏移
+      const perpAngle = angle + Math.PI / 2;
+      const offDist = 38;
+      cities.push(new City(cities.length, tx + Math.cos(perpAngle)*offDist, ty + Math.sin(perpAngle)*offDist, i, force));
+      cities.push(new City(cities.length, tx - Math.cos(perpAngle)*offDist, ty - Math.sin(perpAngle)*offDist, i, Math.floor(force * 0.8)));
 
-    // AI 3座：右侧三角（初始兵力降低）
-    cities.push(new City(4, marginX + cw * 0.95, marginY + ch * 0.25, TEAM_AI, 40));
-    cities.push(new City(5, marginX + cw * 0.95, marginY + ch * 0.75, TEAM_AI, 40));
-    cities.push(new City(6, marginX + cw * 0.82, marginY + ch * 0.50, TEAM_AI, 45));
+      if (i > 0) aiTimers[i] = Math.random() * cfg.aiInterval * 0.5;
+    }
+
+    // 中立城池：散布在中心区域
+    const neutralCount = 10 + Math.floor(opponentCount * 1.8);
+    let placed = 0;
+    let attempts = 0;
+    while (placed < neutralCount && attempts < 200) {
+      attempts++;
+      const r = 30 + Math.random() * (teamRadius * 0.65);
+      const a = Math.random() * Math.PI * 2;
+      const nx = centerX + Math.cos(a) * r;
+      const ny = centerY + Math.sin(a) * r;
+      if (nx < 60 || nx > W-60 || ny < 70 || ny > H-70) continue;
+      let valid = true;
+      for (let c of cities) {
+        if (Math.hypot(c.x-nx, c.y-ny) < 65) { valid = false; break; }
+      }
+      if (!valid) continue;
+      const force = 10 + Math.floor(Math.random() * 45);
+      cities.push(new City(cities.length, nx, ny, TEAM_NEUTRAL, force));
+      placed++;
+    }
   }
 
   // ===== 出兵 =====
@@ -393,46 +700,37 @@
     armies.push(new Army(from, to, amount, from.team));
   }
 
-  // ===== AI（更简单、更慢） =====
-  function aiThink() {
-    const myCities = cities.filter(c => c.team === TEAM_AI && c.force > 1);
+  // ===== AI 逻辑（每个AI独立思考） =====
+  function aiThink(team) {
+    const cfg = DIFFICULTY[currentDifficulty];
+    const myCities = cities.filter(c => c.team === team && c.force > 1);
     if (myCities.length === 0) return;
 
-    const enemyCities = cities.filter(c => c.team !== TEAM_AI);
-    const neutralCities = cities.filter(c => c.team === TEAM_NEUTRAL);
+    const targets = cities.filter(c => c.team !== team);
 
     myCities.forEach(city => {
       if (city.force <= 1) return;
       let target = null;
       let bestScore = -9999;
 
-      const targets = [...enemyCities, ...neutralCities];
       targets.forEach(t => {
         const d = Math.hypot(t.x - city.x, t.y - city.y);
-        let score = -d * 0.5;
-        if (t.team === TEAM_NEUTRAL && t.force < 40) {
-          score += 200;
-        }
-        if (t.team === TEAM_PLAYER && t.force < city.force) {
-          score += 150;
-        }
-        if (t.team === TEAM_PLAYER) {
-          score += 50;
-        }
-        if (score > bestScore) {
-          bestScore = score;
-          target = t;
-        }
+        let score = -d * 0.4;
+        if (t.team === TEAM_NEUTRAL && t.force < 40) score += 200;
+        if (t.team !== TEAM_NEUTRAL && t.force < city.force) score += 150;
+        if (t.team !== TEAM_NEUTRAL) score += 50 * cfg.aiAggro;
+        // 略带随机性，让不同AI有不同风格
+        score += (Math.sin(team * 7.3 + t.id * 3.1) * 30);
+        if (score > bestScore) { bestScore = score; target = t; }
       });
 
-      if (target && city.force > 30) {
-        // 更保守的出兵逻辑：兵力>150才主动出兵，否则只在明显优势时才出兵，且只出30%
-        if (city.force > 150) {
-          sendArmy(city, target, 0.3);
+      if (target && city.force > cfg.aiThreshold * 0.4) {
+        if (city.force > cfg.aiThreshold) {
+          sendArmy(city, target, cfg.aiRatio);
         } else if (target.team === TEAM_NEUTRAL && target.force < city.force * 0.6) {
-          sendArmy(city, target, 0.3);
-        } else if (target.team === TEAM_PLAYER && target.force < city.force * 0.5) {
-          sendArmy(city, target, 0.3);
+          sendArmy(city, target, cfg.aiRatio);
+        } else if (target.team !== TEAM_NEUTRAL && target.force < city.force * 0.5) {
+          sendArmy(city, target, cfg.aiRatio);
         }
       }
     });
@@ -446,7 +744,7 @@
   function getCityAt(x, y) {
     for (let c of cities) {
       const dx = c.x - x, dy = c.y - y;
-      if (dx * dx + dy * dy <= (c.radius + 8) * (c.radius + 8)) return c;
+      if (dx*dx + dy*dy <= (c.radius + 8)*(c.radius + 8)) return c;
     }
     return null;
   }
@@ -465,22 +763,17 @@
           let nearest = null, nd = Infinity;
           cities.forEach(c => {
             if (c !== city && c.team !== TEAM_PLAYER) {
-              const d = Math.hypot(c.x - city.x, c.y - city.y);
+              const d = Math.hypot(c.x-city.x, c.y-city.y);
               if (d < nd) { nd = d; nearest = c; }
             }
           });
-          if (nearest) {
-            sendArmy(city, nearest, 1);
-            selectedCity = null;
-          }
+          if (nearest) { sendArmy(city, nearest, 1); selectedCity = null; }
         }
-        lastClickTime = 0;
-        lastClickCity = null;
+        lastClickTime = 0; lastClickCity = null;
         return;
       }
       lastClickTime = now;
       lastClickCity = city;
-
       if (city.team === TEAM_PLAYER) {
         selectedCity = city;
       } else if (selectedCity && selectedCity.team === TEAM_PLAYER) {
@@ -495,7 +788,10 @@
   });
 
   window.addEventListener('keydown', e => {
-    if (e.code === 'Space') {
+    if (e.code === 'Space' && !gameOver && !paused === false) {
+      e.preventDefault();
+      togglePause();
+    } else if (e.code === 'Space' && !gameOver) {
       e.preventDefault();
       togglePause();
     }
@@ -504,7 +800,7 @@
   function togglePause() {
     if (gameOver) return;
     paused = !paused;
-    document.getElementById('ui-center').textContent = paused ? '墨战 — 已暂停' : '墨战 — 空格暂停';
+    document.getElementById('game-status').textContent = paused ? '已暂停 (空格继续)' : '空格暂停';
   }
 
   // ===== 速度按钮 =====
@@ -517,85 +813,138 @@
   });
 
   // ===== 胜负判定 =====
+  function getTeamForce(team) {
+    let total = cities.filter(c => c.team === team).reduce((s, c) => s + c.force, 0);
+    total += armies.filter(a => a.team === team && !a.arrived).reduce((s, a) => s + a.amount, 0);
+    return Math.floor(total);
+  }
+
+  function getActiveTeams() {
+    const active = new Set();
+    cities.forEach(c => { if (c.team >= 0) active.add(c.team); });
+    armies.forEach(a => { if (!a.arrived && a.team >= 0) active.add(a.team); });
+    return active;
+  }
+
+  function updateTeamBar() {
+    const bar = document.getElementById('team-bar');
+    const active = getActiveTeams();
+    let html = '';
+    for (let i = 0; i < totalTeams; i++) {
+      const col = getTeamColor(i);
+      const force = getTeamForce(i);
+      const isPlayer = i === TEAM_PLAYER;
+      const eliminated = !active.has(i);
+      html += '<div class="team-pill' + (isPlayer ? ' is-player' : '') + (eliminated ? ' eliminated' : '') + '">'
+            + '<span class="pill-dot" style="background:' + col.main + '"></span>'
+            + '<span>' + (isPlayer ? '玩家' : col.name) + '</span>'
+            + '<span class="pill-force">' + force + '</span>'
+            + '</div>';
+    }
+    bar.innerHTML = html;
+  }
+
   function checkVictory() {
-    const playerCities = cities.filter(c => c.team === TEAM_PLAYER);
-    const aiCities = cities.filter(c => c.team === TEAM_AI);
-    const playerForce = playerCities.reduce((s, c) => s + c.force, 0) + armies.filter(a => a.team === TEAM_PLAYER && !a.arrived).reduce((s, a) => s + a.amount, 0);
-    const aiForce = aiCities.reduce((s, c) => s + c.force, 0) + armies.filter(a => a.team === TEAM_AI && !a.arrived).reduce((s, a) => s + a.amount, 0);
-
-    document.getElementById('player-force').textContent = Math.floor(playerForce);
-    document.getElementById('ai-force').textContent = Math.floor(aiForce);
-
-    if (aiCities.length === 0 || aiForce <= 0) {
-      endGame(true);
-    } else if (playerCities.length === 0 || playerForce <= 0) {
-      endGame(false);
+    updateTeamBar();
+    const active = getActiveTeams();
+    if (active.size <= 1) {
+      if (active.size === 1) {
+        const winner = [...active][0];
+        endGame(winner === TEAM_PLAYER, winner);
+      } else {
+        endGame(false, -1);
+      }
     }
   }
 
-  function endGame(playerWin) {
+  function endGame(playerWin, winnerTeam) {
     gameOver = true;
-    document.getElementById('victory-text').textContent = playerWin ? '胜利' : '战败';
-    document.getElementById('victory-overlay').classList.add('show');
+    const overlay = document.getElementById('victory-overlay');
+    const text = document.getElementById('victory-text');
+    const sub = document.getElementById('victory-sub');
+    if (playerWin) {
+      text.textContent = '一统天下';
+      text.style.color = '#4f7cf7';
+      text.style.textShadow = '0 0 40px rgba(79,124,247,0.6)';
+      sub.textContent = '蓝方军团征服了整个战场';
+    } else {
+      text.textContent = '战败';
+      text.style.color = '#ff4757';
+      text.style.textShadow = '0 0 40px rgba(255,71,87,0.6)';
+      if (winnerTeam >= 0) {
+        const col = getTeamColor(winnerTeam);
+        sub.textContent = col.name + '军团统一了战场';
+      } else {
+        sub.textContent = '两败俱伤';
+      }
+    }
+    overlay.classList.add('show');
   }
 
   // ===== 绘制 =====
-  function drawInkCity(cx, cy, r, team, selected) {
+  function drawInkCity(city) {
+    const cx = city.x, cy = city.y, r = city.radius;
+    const team = city.team;
+    const selected = city === selectedCity;
+    const col = getTeamColor(team);
+
     ctx.save();
     ctx.translate(cx, cy);
 
-    // 外圈晕染
-    ctx.globalAlpha = 0.18;
-    const grad = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 1.6);
-    if (team === TEAM_PLAYER) {
-      grad.addColorStop(0, '#4299e1');
-      grad.addColorStop(1, 'rgba(66,153,225,0)');
-    } else if (team === TEAM_AI) {
-      grad.addColorStop(0, '#fc8181');
-      grad.addColorStop(1, 'rgba(252,129,129,0)');
-    } else {
-      grad.addColorStop(0, '#a0aec0');
-      grad.addColorStop(1, 'rgba(160,174,192,0)');
-    }
+    // 外圈光晕
+    const pulseR = r * (1.6 + Math.sin(city.pulse) * 0.08);
+    ctx.globalAlpha = 0.2;
+    const grad = ctx.createRadialGradient(0, 0, r*0.4, 0, 0, pulseR);
+    grad.addColorStop(0, col.light);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(0, 0, r * 1.6, 0, Math.PI * 2);
+    ctx.arc(0, 0, pulseR, 0, Math.PI*2);
     ctx.fill();
 
-    // 主圆
+    // 主圆 - 墨迹边缘
     ctx.globalAlpha = 1;
-    ctx.fillStyle = team === TEAM_PLAYER ? '#2b6cb0' : team === TEAM_AI ? '#c53030' : '#a0aec0';
+    ctx.fillStyle = col.main;
     ctx.beginPath();
-    const seg = 16;
+    const seg = 18;
     for (let i = 0; i <= seg; i++) {
-      const a = (Math.PI * 2 * i) / seg;
-      const noise = 1 + Math.sin(a * 3 + cy * 0.1) * 0.06 + Math.cos(a * 5 + cx * 0.1) * 0.04;
+      const a = (Math.PI*2*i)/seg;
+      const noise = 1 + Math.sin(a*3 + cy*0.1)*0.06 + Math.cos(a*5 + cx*0.1)*0.04;
       const rr = r * noise;
-      const px = Math.cos(a) * rr;
-      const py = Math.sin(a) * rr;
+      const px = Math.cos(a)*rr;
+      const py = Math.sin(a)*rr;
       if (i === 0) ctx.moveTo(px, py);
       else ctx.lineTo(px, py);
     }
     ctx.closePath();
     ctx.fill();
 
-    // 高亮选中
+    // 内圈高光
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = col.light;
+    ctx.beginPath();
+    ctx.arc(-r*0.25, -r*0.25, r*0.5, 0, Math.PI*2);
+    ctx.fill();
+
+    // 选中高亮
     if (selected) {
-      ctx.strokeStyle = '#4299e1';
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#fff';
       ctx.lineWidth = 2.5;
-      ctx.setLineDash([4, 4]);
+      ctx.setLineDash([5, 5]);
       ctx.beginPath();
-      ctx.arc(0, 0, r + 10, 0, Math.PI * 2);
+      ctx.arc(0, 0, r + 12, 0, Math.PI*2);
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
     // 兵力数字
+    ctx.globalAlpha = 1;
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold ' + Math.max(10, Math.floor(r * 0.55)) + 'px "Microsoft YaHei", sans-serif';
+    ctx.font = 'bold ' + Math.max(11, Math.floor(r*0.55)) + 'px "Microsoft YaHei", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(Math.floor(cities.find(c => c.x === cx && c.y === cy)?.force || 0), 0, 1);
+    ctx.fillText(Math.floor(city.force), 0, 1);
 
     ctx.restore();
   }
@@ -604,29 +953,33 @@
     ctx.save();
     const fx = a.from.x, fy = a.from.y;
     const tx = a.to.x, ty = a.to.y;
+    const col = getTeamColor(a.team);
 
-    // 连线
-    ctx.globalAlpha = 0.35;
-    ctx.strokeStyle = a.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030';
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = col.main;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(fx, fy);
     ctx.lineTo(tx, ty);
     ctx.stroke();
 
-    // 移动墨点
     ctx.globalAlpha = 0.9;
-    ctx.fillStyle = a.team === TEAM_PLAYER ? '#2b6cb0' : '#c53030';
+    ctx.fillStyle = col.main;
     a.dots.forEach(d => {
       if (d.dead) return;
       const ratio = d.pos / a.dist;
-      const px = fx + (tx - fx) * ratio;
-      const py = fy + (ty - fy) * ratio;
+      const px = fx + (tx-fx)*ratio;
+      const py = fy + (ty-fy)*ratio;
       ctx.beginPath();
-      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.arc(px, py, 2.8, 0, Math.PI*2);
       ctx.fill();
+      // 光晕
+      ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalAlpha = 0.9;
     });
-
     ctx.restore();
   }
 
@@ -640,7 +993,6 @@
       ctx.fillText(e.text, e.x, e.y);
       ctx.restore();
     });
-
     effects.filter(e => e instanceof Explosion).forEach(e => {
       ctx.save();
       const a = Math.max(0, e.life / 0.5);
@@ -648,14 +1000,13 @@
       ctx.strokeStyle = e.color;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+      ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
       ctx.stroke();
-
       ctx.globalAlpha = a * 0.7;
       e.particles.forEach(p => {
         ctx.fillStyle = e.color;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * a, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.r*a, 0, Math.PI*2);
         ctx.fill();
       });
       ctx.restore();
@@ -664,13 +1015,14 @@
 
   function drawBackground() {
     ctx.save();
-    ctx.globalAlpha = 0.03;
-    ctx.fillStyle = '#a0aec0';
-    for (let i = 0; i < 5; i++) {
-      const bx = (Math.sin(i * 2.3) * 0.5 + 0.5) * W;
-      const by = (Math.cos(i * 1.7) * 0.5 + 0.5) * H;
+    ctx.globalAlpha = 0.04;
+    for (let i = 0; i < 6; i++) {
+      const bx = (Math.sin(i*2.3)*0.5+0.5)*W;
+      const by = (Math.cos(i*1.7)*0.5+0.5)*H;
+      const colors = ['#4f7cf7','#ff4757','#2ed573','#a55eea','#ff9f43','#00d2d3'];
+      ctx.fillStyle = colors[i];
       ctx.beginPath();
-      ctx.arc(bx, by, 80 + i * 20, 0, Math.PI * 2);
+      ctx.arc(bx, by, 80+i*25, 0, Math.PI*2);
       ctx.fill();
     }
     ctx.restore();
@@ -686,11 +1038,15 @@
 
     if (!paused && !gameOver) {
       const sdt = dt * gameSpeed;
+      const cfg = DIFFICULTY[currentDifficulty];
 
-      aiTimer += sdt;
-      if (aiTimer >= AI_INTERVAL) {
-        aiTimer -= AI_INTERVAL;
-        aiThink();
+      // 每个AI独立计时
+      for (let t = 1; t < totalTeams; t++) {
+        aiTimers[t] = (aiTimers[t] || 0) + sdt;
+        if (aiTimers[t] >= cfg.aiInterval) {
+          aiTimers[t] -= cfg.aiInterval;
+          aiThink(t);
+        }
       }
 
       cities.forEach(c => c.update(sdt));
@@ -698,30 +1054,94 @@
       armies = armies.filter(a => !a.arrived);
       effects.forEach(e => e.update(sdt));
       effects = effects.filter(e => e.life > 0);
-
       checkVictory();
     }
 
     ctx.clearRect(0, 0, W, H);
     drawBackground();
     armies.forEach(a => drawArmyLine(a));
-    cities.forEach(c => {
-      drawInkCity(c.x, c.y, c.radius, c.team, c === selectedCity);
-    });
+    cities.forEach(c => drawInkCity(c));
     drawEffects(dt);
   }
 
-  // ===== 启动 =====
-  document.getElementById('start-btn').addEventListener('click', () => {
-    document.getElementById('overlay').classList.add('hidden');
-    initCities();
-    paused = false;
+  // ===== 起始页面逻辑 =====
+  let selectedDifficulty = null;
+  let oppCount = 3;
+
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step-' + n).classList.add('active');
+  }
+
+  document.getElementById('to-step-2').addEventListener('click', () => showStep(2));
+
+  document.querySelectorAll('.diff-card').forEach(card => {
+    card.addEventListener('click', () => {
+      selectedDifficulty = card.dataset.diff;
+      showStep(3);
+      updateColorPreview();
+    });
   });
 
+  document.querySelectorAll('.back-btn').forEach(btn => {
+    btn.addEventListener('click', () => showStep(parseInt(btn.dataset.back)));
+  });
+
+  // 对手数量控制
+  const oppSlider = document.getElementById('opp-slider');
+  const oppDisplay = document.getElementById('opp-display');
+  const oppMinus = document.getElementById('opp-minus');
+  const oppPlus = document.getElementById('opp-plus');
+
+  function setOppCount(n) {
+    oppCount = Math.max(1, Math.min(10, n));
+    oppDisplay.textContent = oppCount;
+    oppSlider.value = oppCount;
+    updateColorPreview();
+  }
+
+  oppSlider.addEventListener('input', () => setOppCount(parseInt(oppSlider.value)));
+  oppMinus.addEventListener('click', () => setOppCount(oppCount - 1));
+  oppPlus.addEventListener('click', () => setOppCount(oppCount + 1));
+
+  function updateColorPreview() {
+    const preview = document.getElementById('color-preview');
+    let html = '';
+    for (let i = 0; i <= oppCount; i++) {
+      const col = TEAM_COLORS[i];
+      html += '<div class="color-dot" style="background:' + col.main + ';color:' + col.main + '" title="' + (i===0?'玩家':col.name) + '"></div>';
+    }
+    // 中立色
+    html += '<div class="color-dot" style="background:' + NEUTRAL_COLOR.main + ';color:' + NEUTRAL_COLOR.main + '" title="中立"></div>';
+    preview.innerHTML = html;
+  }
+
+  // 开始游戏
+  document.getElementById('start-game').addEventListener('click', () => {
+    currentDifficulty = selectedDifficulty || 'normal';
+    currentOpponentCount = oppCount;
+    document.getElementById('start-page').classList.add('hidden');
+    initCities(currentOpponentCount, currentDifficulty);
+    paused = false;
+    document.getElementById('game-status').textContent = '空格暂停';
+  });
+
+  // 再战
   document.getElementById('restart-btn').addEventListener('click', () => {
     document.getElementById('victory-overlay').classList.remove('show');
-    initCities();
+    initCities(currentOpponentCount, currentDifficulty);
     paused = false;
+    document.getElementById('game-status').textContent = '空格暂停';
+  });
+
+  // 返回主菜单
+  document.getElementById('menu-btn').addEventListener('click', () => {
+    document.getElementById('victory-overlay').classList.remove('show');
+    document.getElementById('start-page').classList.remove('hidden');
+    showStep(1);
+    paused = true;
+    gameOver = false;
+    cities = []; armies = []; effects = [];
   });
 
   requestAnimationFrame(loop);
